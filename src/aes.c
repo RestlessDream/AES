@@ -155,7 +155,6 @@ word rot_word(word value) {
     return *((word *) res);
 }
 
-
 word ctime(word w) {
     return (w << 1) ^ (((w >> 7) & 1) * 0x11B);
 }
