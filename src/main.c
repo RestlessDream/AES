@@ -17,7 +17,7 @@ size_t hexs2bin(const char *hex, unsigned char **out);
 int hexchr2bin(const char hex, char * out);
 
 int parse_arguments(int argc, char ** argv, FILE ** input, FILE ** output, byte * key, bool * op,
-        standart_config * standart, bool * cbc_padding);
+        standart_config ** standart, bool * cbc_padding);
 
 int main(int argc, char ** argv) {
     FILE * input;
@@ -28,7 +28,7 @@ int main(int argc, char ** argv) {
     standart_config * AES = &AES_128;
     bool cbc_padding = false;
     
-    if (parse_arguments(argc, argv, &input, &output, key, &op_, AES, &cbc_padding) != 0) {
+    if (parse_arguments(argc, argv, &input, &output, key, &op_, &AES, &cbc_padding) != 0) {
         return 1;
     }
 
@@ -110,7 +110,7 @@ int main(int argc, char ** argv) {
 }
 
 int parse_arguments(int argc, char ** argv, FILE ** input, FILE ** output, byte * key, bool * op,
-        standart_config * standart, bool * cbc_padding) {
+        standart_config ** standart, bool * cbc_padding) {
     int option;
     size_t key_len;
     int is_all = 0;
@@ -137,11 +137,11 @@ int parse_arguments(int argc, char ** argv, FILE ** input, FILE ** output, byte 
                 break;
             case 's':
                 if (strcmp(optarg, "AES128") == 0) {
-                    standart = &AES_128;
+                    *standart = &AES_128;
                 } else if (strcmp(optarg, "AES192") == 0) {
-                    standart = &AES_192;
+                    *standart = &AES_192;
                 } else if (strcmp(optarg, "AES256") == 0) {
-                    standart = &AES_256;
+                    *standart = &AES_256;
                 } else {
                     fprintf(stderr, "%s wrong standart name, looks -h for supported standarts.\n", optarg);
                     return -1;
@@ -178,7 +178,7 @@ Options:\n\
         return -3;
     }
 
-    if (key_len != standart->key_length * sizeof(word)) {
+    if (key_len != (*standart)->key_length * sizeof(word)) {
         fprintf(stderr, "Key lenght is not standart compliant.\n");
 
         return -4;
