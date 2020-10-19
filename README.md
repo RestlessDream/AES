@@ -6,6 +6,7 @@
 - *static.h, static.c* - contains the static part of algorithm (e.g. *s_box, standard configurations ...*);
 - *types.h* - contains typedef aliases;
 - *util.h, util.c* - contains utility methods (e.g. *shift, mul_bytes ...*);
+- *modul.h, modul.c* - contains block cipher modes of operation.
 
 ### Unit tests:
 - *test_aes_128.c* - AES 128 standard test set;
