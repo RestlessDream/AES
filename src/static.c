@@ -3,7 +3,7 @@
 const size_t byte_size = 8;
 const size_t word_size = 32;
 const size_t block_size = 128;
-const size_t block_bsize = block_size/byte_size; 
+const size_t block_bsize = BLOCK_BSIZE;
 const size_t block_wsize = block_size/word_size; 
 const size_t state_rows = 4; 
 

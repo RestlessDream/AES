@@ -124,6 +124,15 @@ void test_mul_bytes() {
     TEST_ASSERT_EQUAL_UINT8(0xC1, mul_bytes(0x57, 0x83));
 }
 
+void test_xor_arr() {
+    byte a[10] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10 };
+    byte b[10] = { 0x1, 0x2, 0x3, 0x5, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10 };
+    byte expected[10] = { 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+
+    xor_arr(a, a, b, 10);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, a, 10);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_shift);
@@ -134,5 +143,6 @@ int main() {
     RUN_TEST(test_malloc_2d);
     RUN_TEST(test_high_bits);
     RUN_TEST(test_low_bits);
+    RUN_TEST(test_xor_arr);
     return UNITY_END();
 }

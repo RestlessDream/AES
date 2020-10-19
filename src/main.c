@@ -1,4 +1,5 @@
 #include "aes.h"
+#include "modes.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -12,12 +13,11 @@ extern size_t state_rows;
 extern size_t block_bsize;
 const size_t BUFFER_SIZE = 64 * 1024;
 
-typedef void (*operation)(byte *, byte *, word*);
 size_t hexs2bin(const char *hex, unsigned char **out);
 int hexchr2bin(const char hex, char * out);
 
 int parse_arguments(int argc, char ** argv, FILE ** input, FILE ** output, byte * key, bool * op,
-        standart_config ** standart, bool * cbc_padding);
+        standart_config ** standart, bool * cbc_padding, enum bc_mode * mode, w_mode * op_bcm, byte * init_vect);
 
 int main(int argc, char ** argv) {
     FILE * input;
@@ -27,18 +27,30 @@ int main(int argc, char ** argv) {
     operation op;
     standart_config * AES = &AES_128;
     bool cbc_padding = false;
+    enum bc_mode mode = ECB;
+    enum operation_t op_t;
+    byte iv[32];
+    w_mode op_bcm = &ecb_mode;
     
-    if (parse_arguments(argc, argv, &input, &output, key, &op_, &AES, &cbc_padding) != 0) {
+    if (parse_arguments(argc, argv, &input, &output, key, &op_, &AES,
+                    &cbc_padding, &mode, &op_bcm, iv) != 0) {
         return 1;
     }
 
     if (op_) {
         op = &cipher;
+        op_t = ENCRYPT;
     } else {
         op = &inv_cipher;
+        op_t = DECRYPT;
+    }
+
+    if (mode == CFB || mode == OFB || mode == CTR) {
+        op = &cipher;
     }
 
     setup(AES);
+    init(iv, mode);
     word * w = malloc(AES->block_wsize * (AES->rounds + 1) * sizeof(word));
     key_expansion(key, w);
 
@@ -52,7 +64,7 @@ int main(int argc, char ** argv) {
         read_blocks = reads / block_bsize;
 
         for (size_t i = 0; i < read_blocks; i++) {
-            op(rbuffer + block_bsize * i, wbuffer + block_bsize * i, w);
+            op_bcm(rbuffer + block_bsize * i, wbuffer + block_bsize * i, w, op, op_t);
         }
 
         if (reads % block_bsize != 0) {
@@ -72,7 +84,8 @@ int main(int argc, char ** argv) {
                 reads = (read_blocks + 1) * block_bsize;
             }
 
-            op(rbuffer + read_blocks * block_bsize, wbuffer + read_blocks * block_bsize, w);
+            op_bcm(rbuffer + read_blocks * block_bsize,
+                        wbuffer + read_blocks * block_bsize, w, op, op_t);
         }
 
         if (reads < BUFFER_SIZE && !op_ && cbc_padding) {
@@ -110,12 +123,13 @@ int main(int argc, char ** argv) {
 }
 
 int parse_arguments(int argc, char ** argv, FILE ** input, FILE ** output, byte * key, bool * op,
-        standart_config ** standart, bool * cbc_padding) {
+        standart_config ** standart, bool * cbc_padding, enum bc_mode * mode, w_mode * op_bcm, byte * init_vect) {
     int option;
     size_t key_len;
     int is_all = 0;
+    size_t vect_len;
 
-    while ((option = getopt(argc, argv, "i:o:k:eds:ph")) != -1) {
+    while ((option = getopt(argc, argv, "i:o:k:eds:v:m:ph")) != -1) {
         switch (option) {
             case 'i':
                 *input = fopen(optarg, "r");
@@ -148,6 +162,37 @@ int parse_arguments(int argc, char ** argv, FILE ** input, FILE ** output, byte 
                 }
 
                 break;
+            case 'm':
+                if (strcasecmp(optarg, "ECB") == 0) {
+                    *mode = ECB;
+                    *op_bcm = &ecb_mode;
+                } else if (strcasecmp(optarg, "CBC") == 0) {
+                    *mode = CBC;
+                    *op_bcm = &cbc_mode;
+                } else if (strcasecmp(optarg, "PCBC") == 0) {
+                    *mode = PCBC;
+                    *op_bcm = &pcbc_mode;
+                } else if (strcasecmp(optarg, "CFB") == 0) {
+                    *mode = CFB;
+                    *op_bcm = &cfb_mode;
+                } else if (strcasecmp(optarg, "OFB") == 0) {
+                    *mode = OFB;
+                    *op_bcm = &ofb_mode;
+                } else if (strcasecmp(optarg, "CTR") == 0) {
+                    *mode = CTR;
+                    *op_bcm = &ctr_mode;
+                } else if (strcasecmp(optarg, "XTS") == 0) {
+                    *mode = XTS;
+                    *op_bcm = &xts_mode;
+                } else {
+                    fprintf(stderr, "%s wrong standart name, looks -h for supported standarts.\n", optarg);
+                    return -1;
+                }
+
+                break;
+            case 'v':
+                vect_len = hexs2bin(optarg, &init_vect);
+                break;
             case 'p':
                 *cbc_padding = true;
                 break;
@@ -165,6 +210,8 @@ Options:\n\
   -k    Given key.\n\
   -d    Decrypt operation.\n\
   -s    Standart name. Allowed options: AES128, AES192, AES256.\n\
+  -m    Block cipher mode. Allowed options: ECB, CBC, PCBC, CBF, OFB, CTR, XTS\n\
+  -v    initial vector.\n\
   -p    Use CBC padding.\n\
   -h    display this help.\n");
 
@@ -182,6 +229,12 @@ Options:\n\
         fprintf(stderr, "Key lenght is not standart compliant.\n");
 
         return -4;
+    }
+
+    if (*mode != ECB && vect_len < 16) {
+        fprintf(stderr, "Initial vector lenght is not standart compliant.\n");
+
+        return -7;
     }
 
     return 0;

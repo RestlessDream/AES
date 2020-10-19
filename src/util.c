@@ -86,3 +86,29 @@ byte mul_bytes(byte a, byte b) {
 
     return res;
 }
+
+/**
+ * Multiplies array a and value alpha in galua field 128
+ * 
+ * @param a - first array and destination
+ * @param alpha - value
+ */
+void mul_bytes_128(byte * a, byte alpha) {
+    for (int i = 0; i < 16; i++) {
+        a[i] = mul_bytes(a[i], alpha);
+    }
+}
+
+/**
+ * Xoring arrays a1 and a2 with size - size, result stors in dest
+ * 
+ * @param a1 - first array
+ * @param a2 - second array
+ * @param dest - destination array
+ * @param size - arrays size
+ */
+void xor_arr(byte * dest, byte * a1, byte * a2, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+        dest[i] = a1[i] ^ a2[i];
+    }
+}

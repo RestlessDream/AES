@@ -14,5 +14,7 @@ void right_shift(size_t r, byte * arr, size_t size);
 void copy_column(byte ** src, byte * dest, size_t rsize, size_t cindex);
 void copy_to_column(byte * src, byte ** dest, size_t rsize, size_t cindex);
 byte mul_bytes(byte a, byte b);
+void xor_arr(byte * dest, byte * a1, byte * a2, size_t size);
+void mul_bytes_128(byte * a, byte alpha);
 
 #endif // UTIL_H_

@@ -6,6 +6,9 @@
 
 typedef unsigned char byte;
 typedef uint32_t word;
+typedef void (*operation)(byte *, byte *, word*);
+
+enum operation_t { ENCRYPT, DECRYPT };
 
 typedef struct {
     const size_t key_length;
